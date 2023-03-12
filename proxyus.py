@@ -76,9 +76,9 @@ async def main(parser):
         save_file(args.o, results)
     if args.c is True:
         print('[*] Please wait, proxy checking in progress ...')
-        print('_' * 30)
+        print('_' * 40)
         print('Status | Country | Type | Proxy')
-        print('_' * 30)
+        print('_' * 40)
         checker_results(results)
     if args.c is False and args.o is None:
         print(results)

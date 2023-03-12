@@ -55,6 +55,10 @@ def my_headers():
 
 
 standard_links = [
+    "https://premproxy.com/socks-list/",
+    "https://www.socks-proxy.net/",
+    "https://spys.one/en/socks-proxy-list/",
+    "https://www.freeproxy.world/?type=socks5",
     "https://www.proxy-list.download/SOCKS5",
     "https://www.sslproxies.org/",
     "https://hidemy.name/en/proxy-list/",
