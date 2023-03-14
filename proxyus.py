@@ -1,8 +1,10 @@
-# This is the main function that runs the script.
-# installation and launch are described in file README.
-# It is a freeware program that anyone can use !
-# author: @vomanc
-# version 3.0
+"""
+This is the main function that runs the script.
+installation and launch are described in file README.
+It is a freeware program that anyone can use !
+author: @vomanc
+version 3.0
+"""
 import argparse
 import asyncio
 import logging
@@ -12,7 +14,7 @@ from checker import checker_results
 
 
 def init_logger():
-    # Set logger
+    """ Set logger """
     logger.setLevel(logging.DEBUG)
     handler = logging.FileHandler(filename='Proxyus.log', mode='a')
     filt = [
@@ -27,13 +29,13 @@ def init_logger():
 
 
 def save_file(file_name, data):
-    # For save results in file
-    with open(file_name, 'w') as f:
-        f.write(str(data))
+    """ For save results in file """
+    with open(file_name, 'w') as my_file:
+        my_file.write(str(data))
 
 
 def argument_parser():
-    # Setting options for the program
+    """ Setting options for the program """
     parser = argparse.ArgumentParser(
         prog=f'proxyus, version: {VERSION}',
         description='Script to interact with shodan.',
@@ -68,7 +70,7 @@ def argument_parser():
 
 
 async def main(parser):
-    # Main function that starts the program
+    """ Main function that starts the program """
     args = parser.parse_args()
     results = await search(args)
     print(f'[+] Found {len(results)} pieces')

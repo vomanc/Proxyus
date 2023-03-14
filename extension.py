@@ -1,4 +1,4 @@
-''' Banner, links for free proxy, user-agents used in the script '''
+""" Banner, links for free proxy, user-agents used in the script """
 from random import choice
 
 IPINFO_TOKEN = None
@@ -23,7 +23,7 @@ user_agent_list = [
 
 
 def my_headers():
-    ''' Generation headers '''
+    """ Generation headers """
     user_agent = "Mozilla/5.0 " + choice(user_agent_list)
     acpt = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
     headers_1 = {

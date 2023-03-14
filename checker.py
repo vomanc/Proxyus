@@ -1,11 +1,11 @@
-# To check and determine the proxy country
+""" To check and determine the proxy country """
 from concurrent.futures import ThreadPoolExecutor
 import requests
 from extension import IPINFO_TOKEN
 
 
 def request(proxy):
-    # Checking proxy addr
+    """ Checking proxy addr """
     headers = {
         'Accept': 'application/json',
         'Connection': 'close'
@@ -22,7 +22,7 @@ def request(proxy):
 
 
 def check_response(proxy):
-    # Sends requests in turn to determine the type of proxy: http, socks4, socks5
+    """ Sends requests in turn to determine the type of proxy: http, socks4, socks5 """
     type_proxy = [
         {'http': f'{proxy}', 'https': f'{proxy}'},
         {'http': f'socks4://{proxy}', 'https': f'socks4://{proxy}'},
@@ -51,7 +51,7 @@ def check_response(proxy):
 
 
 def checker_results(proxy_list):
-    # Main function launching in multi-threaded mode
+    """ Main function launching in multi-threaded mode """
     pool = ThreadPoolExecutor(max_workers=30)
     for proxy_res in pool.map(check_response, proxy_list):
         if proxy_res is not False:

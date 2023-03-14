@@ -1,4 +1,4 @@
-# Site and google search
+""" Site and google search """
 import asyncio
 import aiohttp
 from aiohttp_socks import ProxyConnector, ProxyConnectionError
@@ -10,7 +10,7 @@ headers_1, headers_2 = extension.my_headers()
 
 
 async def request(session, url):
-    # Makes a request to get links from a search engine
+    """ Makes a request to get links from a search engine """
     async with session.get(url, headers=headers_1, timeout=30, allow_redirects=True) as response:
         if response.status == 200:
             raw_links = await response.text()
@@ -22,7 +22,7 @@ async def request(session, url):
 
 
 async def searching_site(deep_mode, tor_proxy=None):
-    # Performs a search in Google, returns the url of the address
+    """ Performs a search in Google, returns the url of the address """
     url = 'https://www.google.com/search?q=free+proxy+list'
     async with aiohttp.ClientSession(connector=tor_proxy) as session:
         sites_for_proxy = await request(session, url)
@@ -37,7 +37,7 @@ async def searching_site(deep_mode, tor_proxy=None):
 
 
 async def collector(session, url, proxy_lists):
-    # makes a request to collect the proxy
+    """ makes a request to collect the proxy """
     async with session.get(url, headers=headers_2, timeout=30, allow_redirects=True) as response:
         if response.status == 200:
             response = await response.text()
@@ -46,7 +46,7 @@ async def collector(session, url, proxy_lists):
 
 
 async def standard_mode(tor_proxy, links_list):
-    # Follows certain links to collect proxy addresses
+    """ Follows certain links to collect proxy addresses """
     async with aiohttp.ClientSession(connector=tor_proxy) as session:
         tasks = []
         loop = asyncio.get_event_loop()
@@ -58,7 +58,7 @@ async def standard_mode(tor_proxy, links_list):
 
 
 async def search(args):
-    # Main function for proxy search
+    """ Main function for proxy search """
     if args.tor is True:
         try:
             tor_proxy = ProxyConnector.from_url('socks5://127.0.0.1:9050')
