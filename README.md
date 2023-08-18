@@ -1,6 +1,7 @@
-# Proxyus version 3.0
+# Proxyus version 4.0
 ## Description
-Program for finding and checking proxies. Finds both from certain sources and by searching for their open sources. Checks proxy performance, IP geolocation and protocol
+Program for finding and checking proxies. Finds both from certain sources and by searching for their open sources. Checks proxy performance, IP geolocation and protocol.
+Tested on Ubuntu 22.04, Kali 2023.2, python 3.10+.
 
 ## Features
 * The search is carried out asynchronously, finds up to 4000 proxies in 5 seconds.

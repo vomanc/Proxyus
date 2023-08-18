@@ -1,80 +1,150 @@
 """ Site and google search """
+from random import choice
 import asyncio
 import aiohttp
 from aiohttp_socks import ProxyConnector, ProxyConnectionError
-import extension
-import crawler
+from extension import standard_links
+from crawler import MyBeautifulSoup
 
 
-headers_1, headers_2 = extension.my_headers()
+class MyUserAgents:
+    """ Generation headers """
+    __slots__ = ('common_fields',)
+
+    def __init__(self):
+        """ Generation of common fields """
+        win_nt = "(Windows NT 10.0; "
+        ubuntu = "(X11; Ubuntu; Linux x86_64; "
+        chrome = "Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/"
+        user_agents = (
+            f"{win_nt}rv:115.0) Gecko/20100101 Firefox/115.0",
+            f"{win_nt}rv:116.0) Gecko/20100101 Firefox/116.0",
+            f"{win_nt}rv:107.0) Gecko/20100101 Firefox/107.0",
+            f"{win_nt}rv:108.0) Gecko/20100101 Firefox/108.0",
+            f"{win_nt}rv:109.0) Gecko/20100101 Firefox/109.0",
+            f"{ubuntu}rv:115.0) Gecko/20100101 Firefox/115.0",
+            f"{ubuntu}rv:116.0) Gecko/20100101 Firefox/116.0",
+            f"{ubuntu}rv:112.0) Gecko/20100101 Firefox/112.0",
+            f"{ubuntu}rv:114.0) Gecko/20100101 Firefox/114.0",
+            f"{ubuntu}rv:109.0) Gecko/20100101 Firefox/109.0",
+            f"{win_nt}{chrome}116 Safari/537.36",
+            f"{win_nt}{chrome}111 Safari/537.36",
+            f"{win_nt}{chrome}112 Safari/537.36",
+            f"{win_nt}{chrome}113 Safari/537.36",
+        )
+        other = 'xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
+        self.common_fields = {
+            "User-Agent": f'Mozilla/5.0 {choice(user_agents)}',
+            "Accept": f"text/html,application/{other}",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-GPC": "1"
+        }
+
+    async def headers_brave(self):
+        """ Headers for brave searcher """
+        headers = {
+            "Host": "search.brave.com",
+            "Accept-Encoding": "gzip, deflate",
+            "Referer": "https://search.brave.com/search?q=free+proxy+list&source=web",
+            "Pragma": "no-cache",
+            "Cache-Control": "no-cache"
+        }
+        headers.update(self.common_fields)
+        return headers
+
+    async def headers_standard(self, url):
+        """ Headers for other sites """
+        headers = {
+            "Host": url.split('://')[-1].split('/')[0],
+            "Accept-Encoding": "gzip, deflate, br",
+            "Referer": "",
+            "Cookie": "",
+            "Sec-Fetch-User": "?1",
+            "TE": "trailers"
+        }
+        headers.update(self.common_fields)
+        return headers
 
 
-async def request(session, url):
-    """ Makes a request to get links from a search engine """
-    async with session.get(url, headers=headers_1, timeout=30, allow_redirects=True) as response:
-        if response.status == 200:
-            raw_links = await response.text()
-            craw = crawler.MyBeautifulSoup(raw_links)
-            response = await craw.get_links()
+class SearchProxies(MyUserAgents, MyBeautifulSoup):
+    """ Main function for proxy search """
+    __slots__ = ('tor_proxy', 'deep_count', 'proxy_lists')
+
+    def __init__(self, *args):
+        """ Receives two arguments <args.d, args.tor>.
+         define is using a tor proxy us & scrapi method:
+            search deep and standard links """
+        super().__init__()
+        if args[1]:
+            try:
+                self.tor_proxy = ProxyConnector.from_url('socks5://127.0.0.1:9050')
+                print('[+] Tor Network is used !')
+            except ProxyConnectionError:
+                print('[!] Tor connection error')
         else:
-            response = '0'
-        return response
+            self.tor_proxy = None
+        self.deep_count = args[0]
+        self.proxy_lists = set()
+
+    async def run_parser(self):
+        """ Defines method scraping """
+        if self.deep_count is None:
+            async with aiohttp.ClientSession(connector=self.tor_proxy) as session:
+                await self.tasks_runer(session, standard_links)
+        if self.deep_count and self.deep_count in {1, 2}:
+            # Deep search mode
+            await self.deep_mode()
+        return False
+
+    async def get_site(self, session, url):
+        """ Goes to the scraping site """
+        try:
+            async with session.get(
+                    url, headers=await self.headers_standard(url), timeout=30, allow_redirects=True
+            ) as response:
+                if response.status == 200:
+                    response = await response.text()
+                    proxies = await self.page_results(response)
+                    self.proxy_lists.update(proxies)
+        except (
+            UnicodeDecodeError,
+            asyncio.exceptions.TimeoutError, aiohttp.client_exceptions.ClientConnectorError,
+            aiohttp.client_exceptions.ServerDisconnectedError):
+            print('[!] Bad Internet connection')
 
 
-async def searching_site(deep_mode, tor_proxy=None):
-    """ Performs a search in Google, returns the url of the address """
-    url = 'https://www.google.com/search?q=free+proxy+list'
-    async with aiohttp.ClientSession(connector=tor_proxy) as session:
-        sites_for_proxy = await request(session, url)
-        if deep_mode == 2:
-            for page in range(10, 60, 10):
-                url = f'{url}&start={page}&sa=N'
-                site_proxy = await request(session, url)
-                sites_for_proxy += site_proxy
-                if site_proxy == '0':
-                    return False
-    return set(sites_for_proxy)
+    async def deep_mode(self):
+        """ Define deep mode """
+        query = ('source=web',)
+        if self.deep_count == 2:
+            query = [*query, *[f'&offset={count}&spellcheck=0' for count in range(1, 5)]]
 
+        await self.searching_sites(query)
 
-async def collector(session, url, proxy_lists):
-    """ makes a request to collect the proxy """
-    async with session.get(url, headers=headers_2, timeout=30, allow_redirects=True) as response:
-        if response.status == 200:
-            response = await response.text()
-            craw = crawler.MyBeautifulSoup(response)
-            proxy_lists += await craw.page_results()
+    async def searching_sites(self, query):
+        """ Performs a search in Google, returns the url of the address """
+        async with aiohttp.ClientSession(connector=self.tor_proxy) as session:
+            for url in query:
+                url = f'https://search.brave.com/search?q=free proxy list&{url}'
 
+                async with session.get(
+                        url, headers=await self.headers_brave(), timeout=30, allow_redirects=True
+                        ) as response:
 
-async def standard_mode(tor_proxy, links_list):
-    """ Follows certain links to collect proxy addresses """
-    async with aiohttp.ClientSession(connector=tor_proxy) as session:
+                    if response.status == 200:
+                        response = await response.text()
+                        links = await self.get_links(response)
+                        await self.tasks_runer(session, links)
+
+    async def tasks_runer(self, session, links):
+        """ Created and run tasks for requests site """
         tasks = []
         loop = asyncio.get_event_loop()
-        proxy_lists = []
-        for url in links_list:
-            tasks.append(loop.create_task(collector(session, url, proxy_lists)))
+        for link in links:
+            tasks.append(loop.create_task(self.get_site(session, link)))
         await asyncio.gather(*tasks)
-    return set(proxy_lists)
-
-
-async def search(args):
-    """ Main function for proxy search """
-    if args.tor is True:
-        try:
-            tor_proxy = ProxyConnector.from_url('socks5://127.0.0.1:9050')
-            print('[+] Tor Network is used !')
-        except ProxyConnectionError:
-            return '[!] Tor connection error'
-    else:
-        tor_proxy = None
-
-    if args.d is None:
-        return await standard_mode(tor_proxy, extension.standard_links)
-    if args.d in (1, 2):
-        # Deep search mode
-        found_links = await searching_site(args.d, tor_proxy)
-        if found_links is not False:
-            return await standard_mode(tor_proxy, found_links)
-        return '[*] Perhaps the search engine is blocking your address !'
-    print('[!] -d 1 or 2')
-    return False

@@ -1,16 +1,15 @@
-"""
-This is the main function that runs the script.
-installation and launch are described in file README.
-It is a freeware program that anyone can use !
-author: @vomanc
-version 3.0
-"""
+# This is the main function that runs the script.
+# installation and launch are described in file README.
+# It is a freeware program that anyone can use !
+# author: @vomanc
+# version 4.0
+# https://github.com/vomanc/Proxyus
 import argparse
 import asyncio
 import logging
 from extension import BANNER
-from searcher import search
-from checker import checker_results
+from searcher import SearchProxies
+from checker import ProxyChecker
 
 
 def init_logger():
@@ -30,7 +29,7 @@ def init_logger():
 
 def save_file(file_name, data):
     """ For save results in file """
-    with open(file_name, 'w') as my_file:
+    with open(file_name, 'w', encoding='utf-8') as my_file:
         my_file.write(str(data))
 
 
@@ -66,34 +65,36 @@ def argument_parser():
         action='version', version=f'Proxyus, version: {VERSION}',
         help='Print version number'
     )
-    return parser
+    return parser.parse_args()
 
 
-async def main(parser):
+async def main():
     """ Main function that starts the program """
-    args = parser.parse_args()
-    results = await search(args)
-    print(f'[+] Found {len(results)} pieces')
-    if args.o is not None:
-        save_file(args.o, results)
-    if args.c is True:
-        print('[*] Please wait, proxy checking in progress ...')
-        print('_' * 40)
-        print('Status | Country | Type | Proxy')
-        print('_' * 40)
-        checker_results(results)
+    args = argument_parser()
+    results = SearchProxies(args.d, args.tor)
+    await results.run_parser()
+
+    print(f'[+] Found {len(results.proxy_lists)} pieces')
+    if args.o:
+        save_file(args.o, results.proxy_lists)
+    if args.c:
+        print(f'[*] Please wait, proxy checking in progress ... \n{"_" * 45} \n',
+              f'Status | Country | Type | Proxy\n{"_" * 45}')
+        checker_run = ProxyChecker()
+        checker_run.results(results.proxy_lists)
     if args.c is False and args.o is None:
-        print(results)
+        print(results.proxy_lists)
 
 
 if __name__ == "__main__":
-    VERSION = '3.0'
+    VERSION = '4.0'
     logger = logging.getLogger('app')
     print(BANNER)
     init_logger()
     logger.debug('start')
     try:
-        asyncio.run(main(argument_parser()))
+        asyncio.run(main())
         logger.debug('Successfully wrote')
     except Exception:
         logger.exception("Error message")
+    print('\n')
